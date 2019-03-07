@@ -1,0 +1,104 @@
+#!/bin/bash
+
+#
+# Uses the AWS CLI utility to fetch a message containing a package name from SQS, download and build that
+# package, and add it to the personal repository located within S3.
+#
+
+# Requried environment variables
+queue=${SQS_QUEUE_URL}                  # The URL of the SQS queue
+region=${AWS_REGION}                    # The AWS region the SQS queue is contained in
+access_key=${AWS_ACCESS_KEY_ID}         # AWS key
+secret_key=${AWS_SECRET_ACCESS_KEY}     # AWS secret key
+
+repourl=${REPO_URL}                     # The location of the personal repo, an S3 bucket 
+repo=${REPO}                            # The name of the DB file within the repository
+arch=${REPO_ARCH}                       # The architecture to build for (eg. x86_64)
+pushover_token=${PUSHOVER_TOKEN}        # API key for the pushover application
+pushover_user=${PUSHOVER_USER}          # User key for pushover notifications
+
+
+# Fetch messages and render them until the queue is drained.
+while [ /bin/true ]; do
+
+    #TODO: Should the message contain the repo S3 URL details?
+    # Fetch the next message and extract the package to build
+    echo "Fetching messages fom SQS queue: ${queue}..."
+    result=$( \
+        aws sqs receive-message \
+            --region ${region} \
+            --queue-url ${queue} \
+            --wait-time-seconds 20 \
+            --query Messages[0].[Body,ReceiptHandle] \
+        | sed -e 's/^"\(.*\)"$/\1/'\
+    )
+
+    if [[ -z "${result}" || "${result}" == "null" ]]; then
+        echo "No messages left in queue. Exiting."
+        exit 0
+    else
+        echo "Message: ${result}."
+        
+        receipt_handle=$(echo ${result} | cut -d\" -f4)
+        echo "Receipt handle: ${receipt_handle}."
+
+        pkg=$(echo $result | cut -d\" -f2)
+        echo "Package: ${pkg}"
+
+        # Call pkgbuild script
+        mkdir /build
+        mkdir /pkg
+        /build-aur "$pkg"
+        
+        # Pull repo DB file
+        echo "Pulling database from S3 Repository: ${repourl}/${arch}/${repo}"
+        repodir=${repo}/${arch}
+        aws s3 sync \
+            --region ${region} \
+            --acl public-read \
+            --exclude "*" \
+            --include "*files.tar.xz" \
+            --include "*db.tar.xz" \
+            s3://${repourl} ${repo}/
+
+        ln -sf ${repodir}/${repo}.files.tar.xz ${repodir}/${repo}.files
+        ln -sf ${repodir}/${repo}.db.tar.xz ${repodir}/${repo}.db
+
+        # repo-add new package
+        echo "Adding new package(s) to repository"
+        cp /pkg/*.pkg.tar.xz ${repodir}
+        pushd ${repodir}
+        archives=$(ls *.pkg.tar.xz)
+        for build in *.pkg.tar.xz; do
+            repo-add ${repo}.db.tar.xz ${build}
+        done
+        popd
+
+        # Sync up DB and package to s3
+        aws s3 sync \
+            --region ${region} \
+            --acl public-read \
+            --follow-symlinks \
+            ${repodir}/ s3://${repourl}/${arch}/
+
+        echo "Cleaning up..."
+        /bin/rm -rf /build
+        /bin/rm -rf /pkg
+        /bin/rm -rf ${repodir}
+
+        echo "Deleting message..."
+        aws sqs delete-message \
+            --region ${region} \
+            --queue-url ${queue} \
+            --receipt-handle "${receipt_handle}"
+
+        echo "Sending notification message..."
+        curl -s \
+            --form-string "token=${pushover_token}" \
+            --form-string "user=${pushover_user}" \
+            --form-string "title=${pkg}" \
+            --form-string "message=Built: ${archives}" \
+            "https://api.pushover.net/1/messages.json"
+
+    fi
+done
