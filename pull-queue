@@ -14,6 +14,7 @@ repo_name=${REPO_NAME}                  # The name of the DB file within the rep
 arch=${REPO_ARCH}                       # The architecture to build for (eg. x86_64)
 pushover_token=${PUSHOVER_TOKEN}        # API key for the pushover application
 pushover_user=${PUSHOVER_USER}          # User key for pushover notifications
+fanout_controller=${FANOUT_CONTROLLER}  # Name of the fanout controller function to invoke
 
 
 # Fetch messages and render them until the queue is drained.
