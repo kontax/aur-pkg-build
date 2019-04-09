@@ -84,11 +84,11 @@ while [ /bin/true ]; do
         popd
 
         # Sync up DB and package to s3
-        #aws s3 sync \
-        #    --region ${region} \
-        #    --acl public-read \
-        #    --follow-symlinks \
-        #    ${repodir}/ s3://${repo_bucket}/${arch}/
+        aws s3 sync \
+            --region ${region} \
+            --acl public-read \
+            --follow-symlinks \
+            ${repodir}/ s3://${repo_bucket}/${arch}/
 
         echo "Cleaning up..."
         /bin/rm -rf /build
