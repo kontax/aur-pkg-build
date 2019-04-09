@@ -57,6 +57,14 @@ while [ /bin/true ]; do
             # Use the AUR building script
             echo "Building a ${pkg} from the AUR"
             /build-aur "$pkg"
+
+            echo "Notifying queue of completion"
+            aws lambda invoke \
+                --function-name $fanout_controller \
+                --invocation-type "Event" \
+                --log-type "None" \
+                --payload "{'PackageName': '${pkg}', 'BuildStatus': 'Complete'}" \
+                no_file
         fi
         
         # Pull repo DB file
