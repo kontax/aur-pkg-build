@@ -11,6 +11,9 @@ cd /build
 chown -R makepkg:users /build
 
 pacman -Sy
+echo "RAW PKGBUILD"
+cat PKGBUILD
+echo ""
 sudo -u makepkg makepkg --noconfirm -sf
 
 mv $package*.pkg.tar.xz /pkg

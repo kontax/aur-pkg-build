@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -e
+
+if [ "$#" -ne 1 ]; then
+  echo -e "Please provide git repository to build."
+  echo -e "The repository must contain a build.sh script within it's pkg directory."
+  echo -e "Usage: docker run --rm -v \$(pwd):/pkg aur-build-server <package-name>"
+  exit 1
+fi
+
+git_repo=$1
+
+cd /build
+git clone $git_repo
+chown -R makepkg:users /build
+
+cd $(ls | head)/pkg/
+bash build.sh
+
+pacman -Sy
+sudo -u makepkg makepkg --noconfirm -sf
+
+mv $package*.pkg.tar.xz /pkg

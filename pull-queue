@@ -1,5 +1,6 @@
 #!/bin/bash
-
+#
+# pull-queue
 #
 # Uses the AWS CLI utility to fetch a message containing a package name from SQS, download and build that
 # package, and add it to the personal repository located within S3.
@@ -8,11 +9,8 @@
 # Requried environment variables
 queue=${SQS_QUEUE_URL}                  # The URL of the SQS queue
 region=${AWS_REGION}                    # The AWS region the SQS queue is contained in
-access_key=${AWS_ACCESS_KEY_ID}         # AWS key
-secret_key=${AWS_SECRET_ACCESS_KEY}     # AWS secret key
 
-repourl=${REPO_URL}                     # The location of the personal repo, an S3 bucket 
-repo=${REPO}                            # The name of the DB file within the repository
+repo_name=${REPO_NAME}                  # The name of the DB file within the repository
 arch=${REPO_ARCH}                       # The architecture to build for (eg. x86_64)
 pushover_token=${PUSHOVER_TOKEN}        # API key for the pushover application
 pushover_user=${PUSHOVER_USER}          # User key for pushover notifications
@@ -21,7 +19,6 @@ pushover_user=${PUSHOVER_USER}          # User key for pushover notifications
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
 
-    #TODO: Should the message contain the repo S3 URL details?
     # Fetch the next message and extract the package to build
     echo "Fetching messages fom SQS queue: ${queue}..."
     result=$( \
@@ -29,40 +26,52 @@ while [ /bin/true ]; do
             --region ${region} \
             --queue-url ${queue} \
             --wait-time-seconds 20 \
-            --query Messages[0].[Body,ReceiptHandle] \
-        | sed -e 's/^"\(.*\)"$/\1/'\
+            --query Messages[0] \
     )
 
     if [[ -z "${result}" || "${result}" == "null" ]]; then
         echo "No messages left in queue. Exiting."
         exit 0
     else
+
+        receipt_handle=$(echo ${result} | jq -r '.ReceiptHandle')
+        body=$(echo $result | jq '.Body | fromjson')
+        pkg=$(echo $body | jq -r '.PackageName')
+        repo_bucket=$(echo $body | jq -r '.Repo' | sed 's|https://||g')
+        git_url=$(echo $body | jq -r '.git_url')
+
         echo "Message: ${result}."
-        
-        receipt_handle=$(echo ${result} | cut -d\" -f4)
         echo "Receipt handle: ${receipt_handle}."
-
-        pkg=$(echo $result | cut -d\" -f2)
         echo "Package: ${pkg}"
+        echo "Personal Repo: ${repo_bucket}"
 
-        # Call pkgbuild script
+        # Build scripts
         mkdir /build
         mkdir /pkg
-        /build-aur "$pkg"
+
+        if [[ "$pkg" == "GIT_REPO" ]]; then
+            # Save the PKGBUILD and build that
+            echo "Building PKGBUILD from git repo"
+            /build-git $git_url
+        else
+            # Use the AUR building script
+            echo "Building a ${pkg} from the AUR"
+            /build-aur "$pkg"
+        fi
         
         # Pull repo DB file
-        echo "Pulling database from S3 Repository: ${repourl}/${arch}/${repo}"
-        repodir=${repo}/${arch}
+        echo "Pulling database from S3 Repository: ${repo_bucket}/${arch}/${repo_name}"
+        repodir=${repo_name}/${arch}
         aws s3 sync \
             --region ${region} \
             --acl public-read \
             --exclude "*" \
             --include "*files.tar.xz" \
             --include "*db.tar.xz" \
-            s3://${repourl} ${repo}/
+            s3://${repo_bucket} ${repo_name}/
 
-        ln -sf ${repodir}/${repo}.files.tar.xz ${repodir}/${repo}.files
-        ln -sf ${repodir}/${repo}.db.tar.xz ${repodir}/${repo}.db
+        ln -sf ${repodir}/${repo_name}.files.tar.xz ${repodir}/${repo_name}.files
+        ln -sf ${repodir}/${repo_name}.db.tar.xz ${repodir}/${repo_name}.db
 
         # repo-add new package
         echo "Adding new package(s) to repository"
@@ -70,16 +79,16 @@ while [ /bin/true ]; do
         pushd ${repodir}
         archives=$(ls *.pkg.tar.xz)
         for build in *.pkg.tar.xz; do
-            repo-add ${repo}.db.tar.xz ${build}
+            repo-add ${repo_name}.db.tar.xz ${build}
         done
         popd
 
         # Sync up DB and package to s3
-        aws s3 sync \
-            --region ${region} \
-            --acl public-read \
-            --follow-symlinks \
-            ${repodir}/ s3://${repourl}/${arch}/
+        #aws s3 sync \
+        #    --region ${region} \
+        #    --acl public-read \
+        #    --follow-symlinks \
+        #    ${repodir}/ s3://${repo_bucket}/${arch}/
 
         echo "Cleaning up..."
         /bin/rm -rf /build
