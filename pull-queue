@@ -6,14 +6,16 @@
 # package, and add it to the personal repository located within S3.
 #
 
+set -uo pipefail
+trap 's=$?; /send-pushover "Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
+
 # Requried environment variables
 queue=${SQS_QUEUE_URL}                  # The URL of the SQS queue
 region=${AWS_REGION}                    # The AWS region the SQS queue is contained in
 
 repo_name=${REPO_NAME}                  # The name of the DB file within the repository
 arch=${REPO_ARCH}                       # The architecture to build for (eg. x86_64)
-pushover_token=${PUSHOVER_TOKEN}        # API key for the pushover application
-pushover_user=${PUSHOVER_USER}          # User key for pushover notifications
 fanout_controller=${FANOUT_CONTROLLER}  # Name of the fanout controller function to invoke
 
 
@@ -111,12 +113,7 @@ while [ /bin/true ]; do
             --receipt-handle "${receipt_handle}"
 
         echo "Sending notification message..."
-        curl -s \
-            --form-string "token=${pushover_token}" \
-            --form-string "user=${pushover_user}" \
-            --form-string "title=${pkg}" \
-            --form-string "message=Built: ${archives}" \
-            "https://api.pushover.net/1/messages.json"
+        /send-pushover "${pkg}" "Built: ${archives}"
 
     fi
 done

@@ -19,5 +19,6 @@ RUN useradd -d /build makepkg
 ADD build-aur /build-aur
 ADD build-git /build-git
 ADD build-pkgbuild /build-pkgbuild
+ADD send-pushover /send-pushover
 ADD pull-queue /pull-queue
 ENTRYPOINT ["/pull-queue"]
