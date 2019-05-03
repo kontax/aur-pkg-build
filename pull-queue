@@ -23,7 +23,8 @@ aur_key=${AUR_KEY}                      # Name of the SSM parameter containing t
 # Import the required gpg keys
 aws ssm get-parameter --region "${region}" --name "${aur_key}" --with-decryption | jq -r ".Parameter.Value" > aur.key
 sudo -u makepkg gpg --import aur.key
-key_id=$(sudo -u makepkg gpg --list-keys --keyid-format LONG | grep pub | grep -o -P '(?<=/)[A-Z0-9]{16}')
+gpg --import aur.key
+key_id=$(gpg --list-keys --keyid-format LONG | grep pub | grep -o -P '(?<=/)[A-Z0-9]{16}')
 rm aur.key
 
 
