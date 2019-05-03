@@ -99,7 +99,7 @@ while [ /bin/true ]; do
         pushd ${repodir}
         archives=$(ls *.pkg.tar.xz)
         for build in *.pkg.tar.xz; do
-            repo-add ${repo_name}.db.tar.xz ${build}
+            repo-add ${repo_name}.db.tar.xz ${build} -s -k ${key_id}
         done
         popd
 
