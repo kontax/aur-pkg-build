@@ -2,14 +2,15 @@
 
 set -e
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 2 ]; then
   echo -e "Please provide git repository to build."
   echo -e "The repository must contain a build.sh script within it's pkg directory."
-  echo -e "Usage: docker run --rm -v \$(pwd):/pkg aur-build-server <package-name>"
+  echo -e "Usage: build-git <package-name> <key-id>"
   exit 1
 fi
 
 git_repo=$1
+key=$2
 
 cd /build
 git clone $git_repo
@@ -19,6 +20,6 @@ cd $(ls | head)/pkg/
 bash build.sh
 
 pacman -Sy
-sudo -u makepkg makepkg --noconfirm -sf
+sudo -u makepkg makepkg --noconfirm -sf --sign --key "$key"
 
 mv $package*.pkg.tar.xz /pkg

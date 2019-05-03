@@ -2,15 +2,16 @@
 
 set -e
 
-if [ "$#" -ne 1 ]; then
-  echo -e "Please provide AUR package name to build\nUsage: docker run --rm -v \$(pwd):/pkg aur-build-server <package-name>"
+if [ "$#" -ne 2 ]; then
+  echo -e "Please provide AUR package name and GPG key to build\nUsage: build-aur <package-name> <key-id>"
   exit 1
 fi
 
 package=$1
+key=$2
 
 chown -R makepkg:users /build
 
 sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/$package.git /build
 
-/build-pkgbuild
+/build-pkgbuild $key

@@ -13,12 +13,17 @@ RUN pacman -Syu --noconfirm --needed \
     jq
 
 # Non-root user used to build packages
-RUN useradd -d /build makepkg
+RUN mkdir /mphome \
+    && useradd -d /mphome makepkg \
+    && chown makepkg /mphome
 
 # Make xz compression use all available cores
 RUN sed -E -i \
     's/COMPRESSXZ.*/COMPRESSXZ=(xz -c -z - --threads=0)/g; \
      s/(#)?MAKEFLAGS.*/MAKEFLAGS="-j$(nproc)"/g' /etc/makepkg.conf
+
+# Initialize pacman for sigining packages
+RUN pacman-key --init
 
 # Scripts
 ADD build-aur /build-aur

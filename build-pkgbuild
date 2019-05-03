@@ -7,10 +7,12 @@ if [ ! -f /build/PKGBUILD ]; then
   exit 1
 fi
 
+key=$1
+
 cd /build
 chown -R makepkg:users /build
 
 pacman -Sy
-sudo -u makepkg makepkg --noconfirm -sf
+sudo -u makepkg makepkg --noconfirm -sf --sign --key "$key"
 
 mv $package*.pkg.tar.xz /pkg

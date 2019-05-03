@@ -17,6 +17,16 @@ region=${AWS_REGION}                    # The AWS region the SQS queue is contai
 repo_name=${REPO_NAME}                  # The name of the DB file within the repository
 arch=${REPO_ARCH}                       # The architecture to build for (eg. x86_64)
 fanout_controller=${FANOUT_CONTROLLER}  # Name of the fanout controller function to invoke
+aur_key=${AUR_KEY}                      # Name of the SSM parameter containing the signing key
+
+
+# Import the required gpg keys
+aws ssm get-parameter --region "${region}" --name "${aur_key}" --with-decryption | jq -r ".Parameter.Value" > aur.key
+sudo -u makepkg gpg --import aur.key
+key_id=$(sudo -u makepkg gpg --list-keys --keyid-format LONG | grep pub | grep -o -P '(?<=/)[A-Z0-9]{16}')
+echo "KeyID: $key_id"
+pacman-key --keyserver keys.gnupg.net -r "$key_id"
+pacman-key --lsign-key "$key_id"
 
 
 # Fetch messages and render them until the queue is drained.
@@ -55,11 +65,11 @@ while [ /bin/true ]; do
         if [[ "$pkg" == "GIT_REPO" ]]; then
             # Save the PKGBUILD and build that
             echo "Building PKGBUILD from git repo"
-            /build-git $git_url
+            /build-git "$git_url" "$key_id"
         else
             # Use the AUR building script
             echo "Building a ${pkg} from the AUR"
-            /build-aur "$pkg"
+            /build-aur "$pkg" "$key_id"
 
             echo "Notifying queue of completion"
             aws lambda invoke \
@@ -87,6 +97,7 @@ while [ /bin/true ]; do
         # repo-add new package
         echo "Adding new package(s) to repository"
         cp /pkg/*.pkg.tar.xz ${repodir}
+        cp /pkg/*.pkg.tar.xz.sig ${repodir}
         pushd ${repodir}
         archives=$(ls *.pkg.tar.xz)
         for build in *.pkg.tar.xz; do
