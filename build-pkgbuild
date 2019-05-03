@@ -16,3 +16,4 @@ pacman -Sy
 sudo -u makepkg makepkg --noconfirm -sf --sign --key "$key"
 
 mv $package*.pkg.tar.xz /pkg
+mv $package*.pkg.tar.xz.sig /pkg
