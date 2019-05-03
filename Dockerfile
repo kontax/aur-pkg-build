@@ -22,9 +22,6 @@ RUN sed -E -i \
     's/COMPRESSXZ.*/COMPRESSXZ=(xz -c -z - --threads=0)/g; \
      s/(#)?MAKEFLAGS.*/MAKEFLAGS="-j$(nproc)"/g' /etc/makepkg.conf
 
-# Initialize pacman for sigining packages
-RUN pacman-key --init
-
 # Scripts
 ADD build-aur /build-aur
 ADD build-git /build-git

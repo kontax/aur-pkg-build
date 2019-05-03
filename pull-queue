@@ -24,9 +24,7 @@ aur_key=${AUR_KEY}                      # Name of the SSM parameter containing t
 aws ssm get-parameter --region "${region}" --name "${aur_key}" --with-decryption | jq -r ".Parameter.Value" > aur.key
 sudo -u makepkg gpg --import aur.key
 key_id=$(sudo -u makepkg gpg --list-keys --keyid-format LONG | grep pub | grep -o -P '(?<=/)[A-Z0-9]{16}')
-echo "KeyID: $key_id"
-pacman-key --keyserver keys.gnupg.net -r "$key_id"
-pacman-key --lsign-key "$key_id"
+rm aur.key
 
 
 # Fetch messages and render them until the queue is drained.
