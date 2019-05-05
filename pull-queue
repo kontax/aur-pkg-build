@@ -6,8 +6,9 @@
 # package, and add it to the personal repository located within S3.
 #
 
+pkg=""
 set -uo pipefail
-trap 's=$?; /send-pushover "Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
 IFS=$'\n\t'
 
 # Requried environment variables
