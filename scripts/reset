@@ -14,12 +14,13 @@ region=${AWS_REGION}                    # The AWS region the SQS queue is contai
 fanout_queue=${FANOUT_QUEUE}            # URL of the queue to send a completion or failure notification to
 pkg="$0"
 
+echo "Notifying queue of failure"
+
 if [ -z "$pkg" ]; then
     echo "Failure happened before a package was built"
     exit 1
 fi
 
-echo "Notifying queue of completion"
 aws sqs send-message \
     --region ${region} \
     --queue-url ${fanout_queue} \
