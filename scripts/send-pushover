@@ -10,7 +10,7 @@ pushover_user=${PUSHOVER_USER}          # User key for pushover notifications
 
 set -e
 
-if [ "$#" -le 2 ]; then
+if [ "$#" -lt 2 ]; then
   echo -e "Usage: pushover-send <title> <message> <stderr_file>"
   exit 1
 fi
