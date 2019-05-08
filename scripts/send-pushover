@@ -10,13 +10,16 @@ pushover_user=${PUSHOVER_USER}          # User key for pushover notifications
 
 set -e
 
-if [ "$#" -ne 2 ]; then
-  echo -e "Usage: pushover-send <title> <message>"
+if [ "$#" -le 2 ]; then
+  echo -e "Usage: pushover-send <title> <message> <stderr_file>"
   exit 1
 fi
 
 title=$1
 message=$2
+if [ -z "$3" ]; then
+    message=$(echo "$message\n"; cat "$3")
+fi
 
 curl -s \
     --form-string "token=${pushover_token}" \
