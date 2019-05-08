@@ -6,8 +6,6 @@
 # package, and add it to the personal repository located within S3.
 #
 
-pkg=""
-result=""
 set -uo pipefail
 trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND" "stderr.log"; /reset $pkg $receipt_handle; exit $s' ERR
 IFS=$'\n\t'
