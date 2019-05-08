@@ -1,8 +1,8 @@
 FROM archlinux/base:latest
 
 # Set up base files
-COPY sudoers /etc/sudoers
-COPY mirrorlist /etc/pacman.d/mirrorlist
+COPY cfg/sudoers            /etc/sudoers
+COPY cfg/mirrorlist         /etc/pacman.d/mirrorlist
 
 # Install base packages
 RUN pacman -Syu --noconfirm --needed \
@@ -23,9 +23,10 @@ RUN sed -E -i \
      s/(#)?MAKEFLAGS.*/MAKEFLAGS="-j$(nproc)"/g' /etc/makepkg.conf
 
 # Scripts
-ADD build-aur /build-aur
-ADD build-git /build-git
-ADD build-pkgbuild /build-pkgbuild
-ADD send-pushover /send-pushover
-ADD pull-queue /pull-queue
+ADD scripts/build-aur       /build-aur
+ADD scripts/build-git       /build-git
+ADD scripts/build-pkgbuild  /build-pkgbuild
+ADD scripts/send-pushover   /send-pushover
+ADD scripts/pull-queue      /pull-queue
+ADD scripts/reset           /reset
 ENTRYPOINT ["/pull-queue"]
