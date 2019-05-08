@@ -9,7 +9,7 @@
 pkg=""
 result=""
 set -uo pipefail
-trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; /reset $result; exit $s' ERR
+trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; /reset $pkg $receipt_handle; exit $s' ERR
 IFS=$'\n\t'
 
 # Requried environment variables
