@@ -2,7 +2,8 @@
 #
 # reset
 #
-# Sends a failure notification to the fanout queue to allow it to be handled.
+# Sends a failure notification to the fanout queue to allow it to be handled and remove the package from
+# the queue to prevent further attempts at building.
 #
 
 set -uo pipefail
@@ -10,19 +11,29 @@ trap 's=$?; /send-pushover "Reset Error" "$0: Error on line "$LINENO": $BASH_COM
 IFS=$'\n\t'
 
 # Requried environment variables
+queue=${SQS_QUEUE_URL}                  # The URL of the SQS queue
 region=${AWS_REGION}                    # The AWS region the SQS queue is contained in
 fanout_queue=${FANOUT_QUEUE}            # URL of the queue to send a completion or failure notification to
-pkg="$0"
+result="$1"
 
-echo "Notifying queue of failure"
-
-if [ -z "$pkg" ]; then
+if [ -z "$result" ]; then
     echo "Failure happened before a package was built"
     exit 1
 fi
 
+receipt_handle=$(echo ${result} | jq -r '.ReceiptHandle')
+body=$(echo $result | jq '.Body | fromjson')
+pkg=$(echo $body | jq -r '.PackageName')
+
+echo "Notifying queue of failure"
 aws sqs send-message \
     --region ${region} \
     --queue-url ${fanout_queue} \
     --message-body "{\"PackageName\": \"${pkg}\", \"BuildStatus\": \"Failed\"}"
+
+echo "Deleting message..."
+aws sqs delete-message \
+    --region ${region} \
+    --queue-url ${queue} \
+    --receipt-handle "${receipt_handle}"
 
