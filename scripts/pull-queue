@@ -77,6 +77,13 @@ while [ /bin/true ]; do
                     --include "${built_package}*.pkg.tar.xz*" \
                     s3://${repo_bucket} /pkg/
             done
+
+            echo "Clearing the fanout status table"
+            aws sqs send-message \
+                --region ${region} \
+                --queue-url ${fanout_queue} \
+                --message-body "{\"FanoutStatus\": \"Complete\"}"
+
         else
             # Use the AUR building script
             echo "Building a ${pkg} from the AUR"
