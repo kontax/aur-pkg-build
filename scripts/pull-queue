@@ -75,7 +75,7 @@ while [ /bin/true ]; do
                     --acl public-read \
                     --exclude "*" \
                     --include "${built_pkg}*.pkg.tar.xz*" \
-                    s3://${repo_bucket} /pkg/
+                    s3://${repo_bucket}/${arch}/ /pkg/
             done
 
             echo "Clearing the fanout status table"
