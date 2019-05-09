@@ -65,6 +65,18 @@ while [ /bin/true ]; do
             # Save the PKGBUILD and build that
             echo "Building PKGBUILD from git repo"
             /build-git "$git_url" "$key_id"
+            pkgs=$(echo $body | jq -r '.built_packages[]')
+
+            # Store each newly built package in the pkg folder
+            for built_pkg in $pkgs; do
+                echo "Downloading $built_pkg"
+                aws s3 sync \
+                    --region ${region} \
+                    --acl public-read \
+                    --exclude "*" \
+                    --include "${built_package}*.pkg.tar.xz*" \
+                    s3://${repo_bucket} /pkg/
+            done
         else
             # Use the AUR building script
             echo "Building a ${pkg} from the AUR"
