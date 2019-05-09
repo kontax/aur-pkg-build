@@ -74,7 +74,7 @@ while [ /bin/true ]; do
                     --region ${region} \
                     --acl public-read \
                     --exclude "*" \
-                    --include "${built_package}*.pkg.tar.xz*" \
+                    --include "${built_pkg}*.pkg.tar.xz*" \
                     s3://${repo_bucket} /pkg/
             done
 
