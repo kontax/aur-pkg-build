@@ -6,7 +6,7 @@
 # have, and adds them to the local repository.
 #
 
-set -uo pipefail
+set -Eeuo pipefail
 
 # Required environment variables
 region=${AWS_REGION}            # The AWS region the SQS queue is contained in

@@ -6,7 +6,7 @@
 # the queue to prevent further attempts at building.
 #
 
-set -uo pipefail
+set -Eeuo pipefail
 
 # Requried environment variables
 queue=${SQS_QUEUE_URL}                  # The URL of the SQS queue

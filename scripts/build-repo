@@ -8,7 +8,7 @@
 # in parallel.
 #
 
-set -uo pipefail
+set -Eeuo pipefail
 IFS=$'\n\t'
 
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in

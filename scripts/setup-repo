@@ -7,7 +7,7 @@
 # should be run at the start of the process to get everything set up correctly.
 #
 
-set -uo pipefail
+set -Eeuo pipefail
 
 # Requried environment variables
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
