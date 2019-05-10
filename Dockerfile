@@ -23,8 +23,8 @@ RUN sed -E -i \
      s/(#)?MAKEFLAGS.*/MAKEFLAGS="-j$(nproc)"/g' /etc/makepkg.conf
 
 # Pull aurutils from AUR
-RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/aurutils.git /build
-RUN cd /build && sudo -u makepkg makepkg --noconfirm -sif
+RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/aurutils.git /mphome
+RUN cd /mphome && sudo -u makepkg makepkg --noconfirm -sif
 
 # Scripts
 ADD scripts/setup-repo      /setup-repo

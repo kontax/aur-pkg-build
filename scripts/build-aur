@@ -38,3 +38,10 @@ sudo -u makepkg aur sync \
     -r "/${repo_bucket}/${arch}" \
     "${package}"
 
+# Sync up DB and package to s3
+aws s3 sync \
+    --region ${region} \
+    --acl public-read \
+    --follow-symlinks \
+    /${repo_bucket}/${arch}/ s3://${repo_bucket}/${arch}/
+

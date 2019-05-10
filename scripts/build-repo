@@ -46,11 +46,11 @@ for built_pkg in $pkgs; do
     # Copy the package and signature to a temp folder
     pushd /pkg
     newpkg=$(ls *.pkg.tar.xz)
-    mv "${newpkg}"*
+    mv "${newpkg}"* /${repo_bucket}/${arch}/
 
     # Add it to the repo and sign
     pushd /${repo_bucket}/${arch}
-    repo-add ${repo_name}.db.tar.xz "${newpkg}" -s
+    sudo -u makepkg repo-add ${repo_name}.db.tar.xz "${newpkg}" -s
     popd
     popd
 done

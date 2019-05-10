@@ -2,7 +2,7 @@
 
 set -e
 
-if [ "$#" -ne 1 ]; then
+if [ "$#" -ne 2 ]; then
   echo -e "Please provide git repository to build."
   echo -e "The repository must contain a build.sh script within it's pkg directory."
   echo -e "Usage: build-git <git-repo> <repo-name>"

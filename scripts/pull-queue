@@ -101,7 +101,7 @@ while [ /bin/true ]; do
                     | paste -sd "-")
 
                 # Check if it's within the newly created repository
-                is_built=$(ls /${repo_bucket}/${arch}/*.pkg/tar.xz | grep ${file_check} | wc -l)
+                is_built=$(ls /${repo_bucket}/${arch}/*.pkg.tar.xz | grep ${file_check} | wc -l)
                 if [ $is_built -gt 0 ]; then
 
                     # If so, add it to the queue
@@ -117,7 +117,7 @@ while [ /bin/true ]; do
         echo "Deleting message..."
         delete_msg "${receipt_handle}"
 
-        archives=$(ls /${repo_bucket}/${arch}/*.pkg.tar.xz)
+        archives=$(ls /${repo_bucket}/${arch}/ | egrep "pkg.tar.xz$")
         echo "Sending notification message..."
         /send-pushover "${pkg}" "Built: ${archives}"
 
