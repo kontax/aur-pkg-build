@@ -22,10 +22,15 @@ RUN sed -E -i \
     's/COMPRESSXZ.*/COMPRESSXZ=(xz -c -z - --threads=0)/g; \
      s/(#)?MAKEFLAGS.*/MAKEFLAGS="-j$(nproc)"/g' /etc/makepkg.conf
 
+# Pull aurutils from AUR
+RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/aurutils.git /build
+RUN cd /build && sudo -u makepkg makepkg --noconfirm -sif
+
 # Scripts
+ADD scripts/setup-repo      /setup-repo
+ADD scripts/build-repo      /build-repo
 ADD scripts/build-aur       /build-aur
 ADD scripts/build-git       /build-git
-ADD scripts/build-pkgbuild  /build-pkgbuild
 ADD scripts/send-pushover   /send-pushover
 ADD scripts/pull-queue      /pull-queue
 ADD scripts/reset           /reset

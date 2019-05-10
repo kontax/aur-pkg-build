@@ -2,25 +2,34 @@
 
 set -e
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 1 ]; then
   echo -e "Please provide git repository to build."
   echo -e "The repository must contain a build.sh script within it's pkg directory."
-  echo -e "Usage: build-git <package-name> <key-id>"
+  echo -e "Usage: build-git <git-repo> <repo-name>"
   exit 1
 fi
 
 git_repo=$1
-key=$2
+repo_name=$2
 
+# Sort out the build directory
+if [ -d /build ]; then
+    rm -r /build
+fi
+
+mkdir /build
+chown -R makepkg /build
 cd /build
+
+# Clone the package
 git clone $git_repo
 chown -R makepkg:users /build
 
+# Run the build script
 cd $(ls | head)/pkg/
 bash build.sh
 
+# Build the package and update the repo DB
 pacman -Sy
-sudo -u makepkg makepkg --noconfirm -sf --sign --key "$key"
+sudo -u makepkg aur build -sf -d "${repo_name}" -- --noconfirm
 
-mv $package*.pkg.tar.xz /pkg
-mv $package*.pkg.tar.xz.sig /pkg
