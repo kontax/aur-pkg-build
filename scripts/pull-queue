@@ -2,8 +2,12 @@
 #
 # pull-queue
 #
-# Uses the AWS CLI utility to fetch a message containing a package name from SQS, download and build that
-# package, and add it to the personal repository located within S3.
+# Uses the AWS CLI utility to fetch a message containing a package name from 
+# SQS, download and build that package, and add it to the personal repository 
+# located within S3.
+#
+# Example AUR database within an S3 bucket using the details above:
+#   s3://${repo_bucket}/${repo_arch}/${repo_name}.db.tar.xz
 #
 
 set -uo pipefail
@@ -11,22 +15,36 @@ trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BAS
 IFS=$'\n\t'
 
 # Requried environment variables
-queue=${SQS_QUEUE_URL}                  # The URL of the SQS queue
-region=${AWS_REGION}                    # The AWS region the SQS queue is contained in
+queue=${SQS_QUEUE_URL}          # The URL of the SQS queue
+region=${AWS_REGION}            # The AWS region the SQS queue is contained in
+repo_name=${REPO_NAME}          # The name of the DB file within the repository
+repo_bucket=${REPO_BUCKET}      # The bucket name containing the repo files within AWS
+arch=${REPO_ARCH}               # The architecture to build for (eg. x86_64)
+fanout_queue=${FANOUT_QUEUE}    # URL of the queue to send a completion or failure notification to
 
-repo_name=${REPO_NAME}                  # The name of the DB file within the repository
-arch=${REPO_ARCH}                       # The architecture to build for (eg. x86_64)
-fanout_queue=${FANOUT_QUEUE}            # URL of the queue to send a completion or failure notification to
-aur_key=${AUR_KEY}                      # Name of the SSM parameter containing the signing key
+
+# Sends a message to the AWS SQS queue
+function send_msg() {
+    message=$1
+    aws sqs send-message \
+        --region ${region} \
+        --queue-url ${fanout_queue} \
+        --message-body "${message}"
+}
+
+# Deletes a message from the AWS SQS queue
+function delete_msg() {
+    handle="$1"
+    aws sqs delete-message \
+        --region ${region} \
+        --queue-url ${queue} \
+        --receipt-handle "${handle}"
+}
 
 
-# Import the required gpg keys
-aws ssm get-parameter --region "${region}" --name "${aur_key}" --with-decryption | jq -r ".Parameter.Value" > aur.key
-sudo -u makepkg gpg --import aur.key
-gpg --import aur.key
-key_id=$(gpg --list-keys --keyid-format LONG | grep pub | grep -o -P '(?<=/)[A-Z0-9]{16}')
-rm aur.key
-
+# Set up the repository from s3
+# This is sourced to set the GPGKEY variable
+source /setup-repo
 
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
@@ -35,8 +53,8 @@ while [ /bin/true ]; do
     echo "Fetching messages fom SQS queue: ${queue}..."
     result=$( \
         aws sqs receive-message \
-            --region ${region} \
-            --queue-url ${queue} \
+            --region "${region}" \
+            --queue-url "${queue}" \
             --wait-time-seconds 20 \
             --query Messages[0] \
     )
@@ -49,7 +67,6 @@ while [ /bin/true ]; do
         receipt_handle=$(echo ${result} | jq -r '.ReceiptHandle')
         body=$(echo $result | jq '.Body | fromjson')
         pkg=$(echo $body | jq -r '.PackageName')
-        repo_bucket=$(echo $body | jq -r '.Repo' | sed 's|https://||g')
         git_url=$(echo $body | jq -r '.git_url')
 
         echo "Message: ${result}."
@@ -57,88 +74,50 @@ while [ /bin/true ]; do
         echo "Package: ${pkg}"
         echo "Personal Repo: ${repo_bucket}"
 
-        # Build scripts
-        mkdir /build
-        mkdir /pkg
-
         if [[ "$pkg" == "GIT_REPO" ]]; then
-            # Save the PKGBUILD and build that
-            echo "Building PKGBUILD from git repo"
-            /build-git "$git_url" "$key_id"
-            pkgs=$(echo $body | jq -r '.built_packages[]')
 
-            # Store each newly built package in the pkg folder
-            for built_pkg in $pkgs; do
-                echo "Downloading $built_pkg"
-                aws s3 sync \
-                    --region ${region} \
-                    --acl public-read \
-                    --exclude "*" \
-                    --include "${built_pkg}*.pkg.tar.xz*" \
-                    s3://${repo_bucket}/${arch}/ /pkg/
-            done
+            # Update the metapackage and all built packages
+            pkgs=$(echo $body | jq -r '.built_packages[]')
+            /build-repo "${git_url}" "${pkgs}"
 
             echo "Clearing the fanout status table"
-            aws sqs send-message \
-                --region ${region} \
-                --queue-url ${fanout_queue} \
-                --message-body "{\"FanoutStatus\": \"Complete\"}"
+            send_msg "{\"FanoutStatus\": \"Complete\"}"
 
         else
             # Use the AUR building script
             echo "Building a ${pkg} from the AUR"
-            /build-aur "$pkg" "$key_id"
+            /build-aur "$pkg"
+
+            # Any dependencies that were build also need to be added
+            depends=$(aur depends "${pkg}")
+            for dep in $depends; do
+
+                # Figure out the package name by concatenating the
+                # name, version and arch according to pacman.
+                # This could be a little brittle...
+                file_check=$(pacman -Si "${pkg}" \
+                    | egrep "Name|Version|Architecture" \
+                    | awk '{print $3}' \
+                    | paste -sd "-")
+
+                # Check if it's within the newly created repository
+                is_built=$(ls /${repo_bucket}/${arch}/*.pkg.tar.xz | grep ${file_check} | wc -l)
+                if [ $is_built -gt 0 ]; then
+
+                    # If so, add it to the queue
+                    echo "Adding dependency ${dep} to completion queue"
+                    send_msg "{\"PackageName\": \"${dep}\", \"BuildStatus\": \"Complete\"}"
+                fi
+            done
 
             echo "Notifying queue of completion"
-            aws sqs send-message \
-                --region ${region} \
-                --queue-url ${fanout_queue} \
-                --message-body "{\"PackageName\": \"${pkg}\", \"BuildStatus\": \"Complete\"}"
+            send_msg "{\"PackageName\": \"${pkg}\", \"BuildStatus\": \"Complete\"}"
         fi
-        
-        # Pull repo DB file
-        echo "Pulling database from S3 Repository: ${repo_bucket}/${arch}/${repo_name}"
-        repodir=${repo_name}/${arch}
-        aws s3 sync \
-            --region ${region} \
-            --acl public-read \
-            --exclude "*" \
-            --include "*files.tar.xz" \
-            --include "*db.tar.xz" \
-            s3://${repo_bucket} ${repo_name}/
-
-        ln -sf ${repodir}/${repo_name}.files.tar.xz ${repodir}/${repo_name}.files
-        ln -sf ${repodir}/${repo_name}.db.tar.xz ${repodir}/${repo_name}.db
-
-        # repo-add new package
-        echo "Adding new package(s) to repository"
-        cp /pkg/*.pkg.tar.xz ${repodir}
-        cp /pkg/*.pkg.tar.xz.sig ${repodir}
-        pushd ${repodir}
-        archives=$(ls *.pkg.tar.xz)
-        for build in *.pkg.tar.xz; do
-            repo-add ${repo_name}.db.tar.xz ${build} -s -k ${key_id}
-        done
-        popd
-
-        # Sync up DB and package to s3
-        aws s3 sync \
-            --region ${region} \
-            --acl public-read \
-            --follow-symlinks \
-            ${repodir}/ s3://${repo_bucket}/${arch}/
-
-        echo "Cleaning up..."
-        /bin/rm -rf /build
-        /bin/rm -rf /pkg
-        /bin/rm -rf ${repodir}
 
         echo "Deleting message..."
-        aws sqs delete-message \
-            --region ${region} \
-            --queue-url ${queue} \
-            --receipt-handle "${receipt_handle}"
+        delete_msg "${receipt_handle}"
 
+        archives=$(ls /${repo_bucket}/${arch}/ | egrep "pkg.tar.xz$")
         echo "Sending notification message..."
         /send-pushover "${pkg}" "Built: ${archives}"
 

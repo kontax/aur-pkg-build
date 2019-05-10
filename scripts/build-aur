@@ -1,17 +1,47 @@
-#!/usr/bin/env bash
+#!/bin/bash
+#
+# build-aur
+#
+# Builds a specified package from the AUR, including any dependencies it may 
+# have, and adds them to the local repository.
+#
+
+set -uo pipefail
+trap 's=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
+IFS=$'\n\t'
+
+# Required environment variables
+repo_name=${REPO_NAME}          # The name of the DB file within the repository
+repo_bucket=${REPO_BUCKET}      # The bucket name containing the repo files within AWS
+arch=${REPO_ARCH}               # The architecture to build for (eg. x86_64)
 
 set -e
 
-if [ "$#" -ne 2 ]; then
-  echo -e "Please provide AUR package name and GPG key to build\nUsage: build-aur <package-name> <key-id>"
+if [ "$#" -ne 1 ]; then
+  echo -e "Please provide AUR package name"
+  echo -e "Usage: build-aur <package-name>"
   exit 1
 fi
 
-package=$1
-key=$2
+package="$1"
 
-chown -R makepkg:users /build
+if [ -d /build ]; then
+    rm -r build
+fi
 
-sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/$package.git /build
+mkdir /build
+chown -R makepkg /build
 
-/build-pkgbuild $key
+sudo -u makepkg aur sync \
+    -snr --no-view \
+    -d "${repo_name}" \
+    -r "/${repo_bucket}/${arch}" \
+    "${package}"
+
+# Sync up DB and package to s3
+aws s3 sync \
+    --region ${region} \
+    --acl public-read \
+    --follow-symlinks \
+    /${repo_bucket}/${arch}/ s3://${repo_bucket}/${arch}/
+
