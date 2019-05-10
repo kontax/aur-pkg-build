@@ -7,15 +7,12 @@
 #
 
 set -uo pipefail
-trap 's=$?; echo "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
-IFS=$'\n\t'
 
 # Required environment variables
+region=${AWS_REGION}            # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}          # The name of the DB file within the repository
 repo_bucket=${REPO_BUCKET}      # The bucket name containing the repo files within AWS
 arch=${REPO_ARCH}               # The architecture to build for (eg. x86_64)
-
-set -e
 
 if [ "$#" -ne 1 ]; then
   echo -e "Please provide AUR package name"
