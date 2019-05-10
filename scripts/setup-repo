@@ -44,3 +44,10 @@ aws s3 sync \
     --include "*db.tar.xz" \
     s3://${repo_bucket} ${repo_name}/
 
+echo "Add repo to pacman.conf"
+cat >> /etc/pacman.conf << EOF
+[${repo_name}]
+Server = file:///${repo_bucket}/${arch}
+SigLevel = Optional TrustAll
+EOF
+pacman -Sy
