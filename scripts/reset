@@ -7,8 +7,6 @@
 #
 
 set -uo pipefail
-trap 's=$?; /send-pushover "Reset Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; exit $s' ERR
-IFS=$'\n\t'
 
 # Requried environment variables
 queue=${SQS_QUEUE_URL}                  # The URL of the SQS queue

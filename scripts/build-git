@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-set -e
+set -uo pipefail
 
 if [ "$#" -ne 2 ]; then
   echo -e "Please provide git repository to build."
