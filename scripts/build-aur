@@ -30,7 +30,7 @@ mkdir /build
 chown -R makepkg /build
 
 sudo -u makepkg aur sync \
-    -snr --no-view \
+    -snrf --no-view --no-ver-shallow \
     -d "${repo_name}" \
     -r "/${repo_bucket}/${arch}" \
     "${package}"
