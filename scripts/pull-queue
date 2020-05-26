@@ -64,7 +64,7 @@ while [ /bin/true ]; do
         body=$(echo $result | jq '.Body | fromjson')
         pkg=$(echo $body | jq -r '.PackageName')
         git_url=$(echo $body | jq -r '.git_url')
-        repo_bucket=$(echo $body | jq -r '.repo')
+        repo_bucket=$(echo $body | jq -r '.Repo')
 
         # Set up the repository from s3 - this only needs to be done once
         if [[ $REPO_SET_UP -eq 1 ]]; then
