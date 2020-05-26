@@ -14,8 +14,6 @@ set -uo pipefail
 trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; /reset $pkg $receipt_handle; exit $s' ERR
 IFS=$'\n\t'
 
-REPO_SET_UP=0                   # Flag to denote whether the repo bucket has been set up
-
 # Requried environment variables
 queue=${SQS_QUEUE_URL}          # The URL of the SQS queue
 region=${AWS_REGION}            # The AWS region the SQS queue is contained in
@@ -67,12 +65,10 @@ while [ /bin/true ]; do
         repo_bucket=$(echo $body | jq -r '.Repo')
 
         # Set up the repository from s3 - this only needs to be done once
-        if [[ $REPO_SET_UP -eq 1 ]]; then
-            REPO_BUCKET=${repo_bucket}
-            # This is sourced to set the GPGKEY variable
-            source /setup-repo
-            REPO_SET_UP=1
-        fi
+        # This is sourced to set the GPGKEY variable
+        echo "Setting up repository $repo_bucket"
+        REPO_BUCKET=${repo_bucket}
+        source /setup-repo
 
         echo "Message: ${result}."
         echo "Receipt handle: ${receipt_handle}."

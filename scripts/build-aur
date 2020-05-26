@@ -22,6 +22,7 @@ fi
 repo_bucket="$1"
 package="$2"
 
+echo "build-aur: Creating build directory"
 if [ -d /build ]; then
     rm -r build
 fi
@@ -29,6 +30,7 @@ fi
 mkdir /build
 chown -R makepkg /build
 
+echo "build-aur: Building package"
 sudo -u makepkg aur sync \
     -snrf --no-view --no-ver-shallow \
     -d "${repo_name}" \
@@ -36,9 +38,11 @@ sudo -u makepkg aur sync \
     "${package}"
 
 # Sync up DB and package to s3
+echo "build-aur: Syncing repo DB and uploading to s3"
 aws s3 sync \
     --region ${region} \
     --acl public-read \
     --follow-symlinks \
     /${repo_bucket}/${arch}/ s3://${repo_bucket}/${arch}/
 
+echo "build-aur: Build complete"

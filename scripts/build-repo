@@ -15,7 +15,7 @@ region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}      # The name of the DB file within the repository
 arch=${REPO_ARCH}           # The architecture to build for (eg. x86_64)
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
   echo -e "Please provide bucket, git URL and packages"
   echo -e "Usage: build-repo <repo-bucket> <git_url> <pkgs>"
   exit 1
