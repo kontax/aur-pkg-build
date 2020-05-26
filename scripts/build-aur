@@ -11,16 +11,16 @@ set -Eeuo pipefail
 # Required environment variables
 region=${AWS_REGION}            # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}          # The name of the DB file within the repository
-repo_bucket=${REPO_BUCKET}      # The bucket name containing the repo files within AWS
 arch=${REPO_ARCH}               # The architecture to build for (eg. x86_64)
 
-if [ "$#" -ne 1 ]; then
-  echo -e "Please provide AUR package name"
-  echo -e "Usage: build-aur <package-name>"
+if [ "$#" -ne 2 ]; then
+  echo -e "Please provide AUR package name and bucket"
+  echo -e "Usage: build-aur <repo-bucket> <package-name>"
   exit 1
 fi
 
-package="$1"
+repo_bucket="$1"
+package="$2"
 
 if [ -d /build ]; then
     rm -r build

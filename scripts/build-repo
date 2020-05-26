@@ -13,11 +13,17 @@ IFS=$'\n\t'
 
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}      # The name of the DB file within the repository
-repo_bucket=${REPO_BUCKET}  # The bucket name containing  repo files within AWS
 arch=${REPO_ARCH}           # The architecture to build for (eg. x86_64)
 
-git_url=$1
-pkgs=$2
+if [ "$#" -ne 2 ]; then
+  echo -e "Please provide bucket, git URL and packages"
+  echo -e "Usage: build-repo <repo-bucket> <git_url> <pkgs>"
+  exit 1
+fi
+
+repo_bucket=$1
+git_url=$2
+pkgs=$3
 
 # Create the temp /pkg folder
 if [ -d /pkg ]; then

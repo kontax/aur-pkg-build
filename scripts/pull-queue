@@ -14,11 +14,12 @@ set -uo pipefail
 trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; /reset $pkg $receipt_handle; exit $s' ERR
 IFS=$'\n\t'
 
+REPO_SET_UP=0                   # Flag to denote whether the repo bucket has been set up
+
 # Requried environment variables
 queue=${SQS_QUEUE_URL}          # The URL of the SQS queue
 region=${AWS_REGION}            # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}          # The name of the DB file within the repository
-repo_bucket=${REPO_BUCKET}      # The bucket name containing the repo files within AWS
 arch=${REPO_ARCH}               # The architecture to build for (eg. x86_64)
 fanout_queue=${FANOUT_QUEUE}    # URL of the queue to send a completion or failure notification to
 
@@ -40,11 +41,6 @@ function delete_msg() {
         --queue-url ${queue} \
         --receipt-handle "${handle}"
 }
-
-
-# Set up the repository from s3
-# This is sourced to set the GPGKEY variable
-source /setup-repo
 
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
@@ -68,6 +64,15 @@ while [ /bin/true ]; do
         body=$(echo $result | jq '.Body | fromjson')
         pkg=$(echo $body | jq -r '.PackageName')
         git_url=$(echo $body | jq -r '.git_url')
+        repo_bucket=$(echo $body | jq -r '.repo')
+
+        # Set up the repository from s3 - this only needs to be done once
+        if [[ $REPO_SET_UP -eq 1 ]]; then
+            REPO_BUCKET=${repo_bucket}
+            # This is sourced to set the GPGKEY variable
+            source /setup-repo
+            REPO_SET_UP=1
+        fi
 
         echo "Message: ${result}."
         echo "Receipt handle: ${receipt_handle}."
@@ -78,7 +83,7 @@ while [ /bin/true ]; do
 
             # Update the metapackage and all built packages
             pkgs=$(echo $body | jq -r '.built_packages[]')
-            /build-repo "${git_url}" "${pkgs}"
+            /build-repo "${repo_bucket}" "${git_url}" "${pkgs}"
 
             echo "Clearing the fanout status table"
             send_msg "{\"FanoutStatus\": \"Complete\"}"
@@ -86,7 +91,7 @@ while [ /bin/true ]; do
         else
             # Use the AUR building script
             echo "Building a ${pkg} from the AUR"
-            /build-aur "$pkg"
+            /build-aur "$repo_bucket" "$pkg"
 
             # Any dependencies that were build also need to be added
             depends=$(aur depends "${pkg}")
