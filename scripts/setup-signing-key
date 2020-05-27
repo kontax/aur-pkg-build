@@ -1,0 +1,32 @@
+#!/bin/bash
+#
+# setup-sigining-key
+#
+# Sets up they GPG key used to sign packages when built. This should be sourced
+# in order to set the GPGKEY environment variable. This should be run at the 
+# start of the process to get everything set up correctly.
+#
+
+set -Eeuo pipefail
+
+# Requried environment variables
+region=${AWS_REGION}        # The AWS region the SQS queue is contained in
+aur_key=${AUR_KEY}          # Name of the SSM param containing the signing key
+
+
+# Import the required gpg keys
+echo "Importing GPG keys for signing built packages"
+aws ssm get-parameter \
+    --region "${region}" \
+    --name "${aur_key}" \
+    --with-decryption \
+    | jq -r ".Parameter.Value" > aur.key
+
+# Add them to the various key storages
+sudo -u makepkg gpg --import aur.key
+gpg --homedir /etc/pacman.d/gnupg --import aur.key
+GPGKEY=$(gpg --show-keys --keyid-format LONG aur.key \
+    | grep sec \
+    | grep -o -P '(?<=/)[A-Z0-9]{16}')
+rm aur.key
+

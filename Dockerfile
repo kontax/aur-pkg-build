@@ -28,11 +28,12 @@ RUN sudo -u makepkg gpg --recv-keys 6BC26A17B9B7018A
 RUN cd /mphome && sudo -u makepkg makepkg --noconfirm -sif
 
 # Scripts
-ADD scripts/setup-repo      /setup-repo
-ADD scripts/build-repo      /build-repo
-ADD scripts/build-aur       /build-aur
-ADD scripts/build-git       /build-git
-ADD scripts/send-pushover   /send-pushover
-ADD scripts/pull-queue      /pull-queue
-ADD scripts/reset           /reset
+ADD scripts/setup-repo          /setup-repo
+ADD scripts/setup-signing-key   /setup-signing-key
+ADD scripts/build-repo          /build-repo
+ADD scripts/build-aur           /build-aur
+ADD scripts/build-git           /build-git
+ADD scripts/send-pushover       /send-pushover
+ADD scripts/pull-queue          /pull-queue
+ADD scripts/reset               /reset
 ENTRYPOINT ["/pull-queue"]

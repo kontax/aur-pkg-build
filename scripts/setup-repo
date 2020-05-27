@@ -3,35 +3,31 @@
 # setup-repo
 #
 # Sets up an AUR repository locally from an S3 bucket by downloading the 
-# database files, and importing the GPG key for signing built packages. This 
-# should be run at the start of the process to get everything set up correctly.
+# database files, and importing the GPG key for signing built packages.
 #
 
 set -Eeuo pipefail
 
 # Requried environment variables
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
-repo_bucket=${REPO_BUCKET}  # The bucket name with repo files within AWS
 repo_name=${REPO_NAME}      # The name of the DB file within the repository
 arch=${REPO_ARCH}           # The architecture to build for (eg. x86_64)
 aur_key=${AUR_KEY}          # Name of the SSM param containing the signing key
 
 
-# Import the required gpg keys
-echo "Importing GPG keys for signing built packages"
-aws ssm get-parameter \
-    --region "${region}" \
-    --name "${aur_key}" \
-    --with-decryption \
-    | jq -r ".Parameter.Value" > aur.key
+if [ "$#" -ne 1 ]; then
+  echo -e "Please provide S3 bucket to sync from"
+  echo -e "Usage: setup-repo <repo-bucket>"
+  exit 1
+fi
 
-# Add them to the various key storages
-sudo -u makepkg gpg --import aur.key
-gpg --homedir /etc/pacman.d/gnupg --import aur.key
-GPGKEY=$(gpg --show-keys --keyid-format LONG aur.key \
-    | grep sec \
-    | grep -o -P '(?<=/)[A-Z0-9]{16}')
-rm aur.key
+repo_bucket="$1"
+
+# Only create the repository if it doesn't already exist
+if [ -d "/${repo_bucket}" ]; then 
+    echo "${repo_bucket} already exists on the filesystem"
+    return
+fi
 
 # Pull repo DB file
 echo "Pulling database from S3 Repository: ${repo_bucket}/${arch}/${repo_name}"
@@ -41,10 +37,11 @@ aws s3 sync \
     --exclude "*" \
     --include "*files.tar.xz" \
     --include "*db.tar.xz" \
-    s3://${repo_bucket} ${repo_name}/
+    s3://${repo_bucket} "/${repo_bucket}/"
 
 ln -sf "$repo_name.db.tar.xz" "/${repo_bucket}/${arch}/${repo_name}.db"
 ln -sf "$repo_name.files.tar.xz" "/${repo_bucket}/${arch}/${repo_name}.files"
+
 chown -R makepkg "/${repo_bucket}"
 
 echo "Add repo to pacman.conf"
@@ -54,3 +51,4 @@ Server = file:///${repo_bucket}/${arch}
 SigLevel = Optional TrustAll
 EOF
 pacman -Sy
+

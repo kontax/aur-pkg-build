@@ -40,6 +40,10 @@ function delete_msg() {
         --receipt-handle "${handle}"
 }
 
+# Set up the GPG key used for sigining AUR packages
+# this is sourced so as to set the GPGKEY variable
+source /setup-signing-key
+
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
 
@@ -65,10 +69,8 @@ while [ /bin/true ]; do
         repo_bucket=$(echo $body | jq -r '.Repo')
 
         # Set up the repository from s3 - this only needs to be done once
-        # This is sourced to set the GPGKEY variable
         echo "Setting up repository $repo_bucket"
-        REPO_BUCKET=${repo_bucket}
-        source /setup-repo
+        /setup-repo "${repo_bucket}"
 
         echo "Message: ${result}."
         echo "Receipt handle: ${receipt_handle}."
@@ -90,7 +92,7 @@ while [ /bin/true ]; do
             /build-aur "$repo_bucket" "$pkg"
 
             # Any dependencies that were build also need to be added
-            depends=$(aur depends "${pkg}")
+            depends=$(aur depends "${pkg}" | grep -v "${pkg}")
             for dep in $depends; do
 
                 # Figure out the package name by concatenating the
