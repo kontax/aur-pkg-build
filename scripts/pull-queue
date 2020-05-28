@@ -92,7 +92,11 @@ while [ /bin/true ]; do
             /build-aur "$repo_bucket" "$pkg"
 
             # Any dependencies that were build also need to be added
-            depends=$(aur depends "${pkg}" | grep -v "${pkg}")
+            # Note: Grep doesn't work for whatever reason
+            echo "pull-queue: Getting dependencies for ${pkg}"
+            depends=$(aur depends "${pkg}" | sed "s/${pkg}//g")
+            echo "pull-queue: ${pkg} has the following dependencies:"
+            echo ${depends}
             for dep in $depends; do
 
                 # Figure out the package name by concatenating the

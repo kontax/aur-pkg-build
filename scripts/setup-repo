@@ -25,12 +25,12 @@ repo_bucket="$1"
 
 # Only create the repository if it doesn't already exist
 if [ -d "/${repo_bucket}" ]; then 
-    echo "${repo_bucket} already exists on the filesystem"
-    return
+    echo "setup-repo: ${repo_bucket} already exists on the filesystem"
+    exit 0
 fi
 
 # Pull repo DB file
-echo "Pulling database from S3 Repository: ${repo_bucket}/${arch}/${repo_name}"
+echo "setup-repo: Pulling database from S3 Repository: ${repo_bucket}/${arch}/${repo_name}"
 aws s3 sync \
     --region ${region} \
     --acl public-read \
@@ -44,11 +44,12 @@ ln -sf "$repo_name.files.tar.xz" "/${repo_bucket}/${arch}/${repo_name}.files"
 
 chown -R makepkg "/${repo_bucket}"
 
-echo "Add repo to pacman.conf"
+echo "setup-repo: Add repo to pacman.conf"
 cat >> /etc/pacman.conf << EOF
 [${repo_name}]
 Server = file:///${repo_bucket}/${arch}
 SigLevel = Optional TrustAll
 EOF
 pacman -Sy
+echo "setup-repo: Finished setting up repository"
 
