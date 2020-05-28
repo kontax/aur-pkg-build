@@ -1,3 +1,5 @@
 info.env
 test.json
 test2.json
+.gitsecret/keys/random_seed
+!*.secret
