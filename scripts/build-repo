@@ -13,7 +13,6 @@ IFS=$'\n\t'
 
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 repo_bucket=${REPO_BUCKET}  # The bucket name containing  repo files within AWS
-repo_name=${REPO_NAME}      # The name of the DB file within the repository
 arch=${REPO_ARCH}           # The architecture to build for (eg. x86_64)
 
 if [ "$#" -ne 3 ]; then

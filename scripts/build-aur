@@ -11,7 +11,6 @@ set -Eeuo pipefail
 # Required environment variables
 region=${AWS_REGION}            # The AWS region the SQS queue is contained in
 repo_bucket=${REPO_BUCKET}      # The bucket name containing the repo files within AWS
-repo_name=${REPO_NAME}          # The name of the DB file within the repository
 arch=${REPO_ARCH}               # The architecture to build for (eg. x86_64)
 
 if [ "$#" -ne 2 ]; then
