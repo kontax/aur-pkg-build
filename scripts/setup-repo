@@ -24,7 +24,7 @@ fi
 repo_name="$1"
 
 # Only create the repository if it doesn't already exist
-if [ -f "/${repo_bucket}/${arch}/${repo_name}" ]; then 
+if [ -f "/${repo_bucket}/${arch}/${repo_name}.db" ]; then 
     echo "setup-repo: ${repo_name} already exists on the filesystem"
     exit 0
 fi
