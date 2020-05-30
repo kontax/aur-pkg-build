@@ -12,16 +12,16 @@ set -Eeuo pipefail
 IFS=$'\n\t'
 
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
-repo_bucket=${REPO_BUCKET}  # The bucket name containing  repo files within AWS
+repo_name=${REPO_NAME}      # The name of the DB file within the repository
 arch=${REPO_ARCH}           # The architecture to build for (eg. x86_64)
 
 if [ "$#" -ne 3 ]; then
-  echo -e "Please provide repo, git URL and packages"
-  echo -e "Usage: build-repo <repo-name> <git_url> <pkgs>"
+  echo -e "Please provide bucket, git URL and packages"
+  echo -e "Usage: build-repo <repo-bucket> <git_url> <pkgs>"
   exit 1
 fi
 
-repo_name=$1
+repo_bucket=$1
 git_url=$2
 pkgs=$3
 
