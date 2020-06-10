@@ -126,7 +126,7 @@ while [ /bin/true ]; do
 
         archives=$(ls /${repo_bucket}/${arch}/ | egrep "pkg.tar.xz$")
         echo "Sending notification message..."
-        if [[ "${pkg}" -eq "GIT_REPO" ]]; then
+        if [[ "$pkg" == "GIT_REPO" ]]; then
             /send-pushover "${repo_bucket}" "Built: ${archives}"
         else
             /send-pushover "${pkg}" "Built: ${archives}"
