@@ -118,7 +118,12 @@ while [ /bin/true ]; do
             done
 
             echo "Notifying queue of completion"
-            send_msg "{\"PackageName\": \"${pkg}\", \"BuildStatus\": \"Complete\"}"
+            send_msg "{ \
+                \"PackageName\": \"${pkg}\", \
+                \"BuildStatus\": \"Complete\", \
+                \"RepoName\": \"${repo_bucket}\" \
+                \"RepoUrl\": \"https://${repo_bucket}.s3-${region}.amazonaws.com/${arch}/${repo_name}.db\" \
+            }"
         fi
 
         echo "Deleting message..."
