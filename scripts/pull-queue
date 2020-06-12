@@ -84,7 +84,11 @@ while [ /bin/true ]; do
             /build-repo "${repo_bucket}" "${git_url}" "${pkgs}"
 
             echo "Clearing the fanout status table"
-            send_msg "{\"FanoutStatus\": \"Complete\"}"
+            send_msg "{ \
+                \"FanoutStatus\": \"Complete\", \
+                \"RepoName\": \"${repo_bucket}\", \
+                \"RepoUrl\": \"https://${repo_bucket}.s3-${region}.amazonaws.com/${arch}/${repo_name}.db\" \
+            }"
 
         else
             # Use the AUR building script
