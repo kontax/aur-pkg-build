@@ -121,7 +121,7 @@ while [ /bin/true ]; do
             send_msg "{ \
                 \"PackageName\": \"${pkg}\", \
                 \"BuildStatus\": \"Complete\", \
-                \"RepoName\": \"${repo_bucket}\" \
+                \"RepoName\": \"${repo_bucket}\", \
                 \"RepoUrl\": \"https://${repo_bucket}.s3-${region}.amazonaws.com/${arch}/${repo_name}.db\" \
             }"
         fi
