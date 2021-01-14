@@ -133,6 +133,8 @@ while [ /bin/true ]; do
         echo "Deleting message..."
         delete_msg "${receipt_handle}"
 
+        echo "Files in /${repo_bucket}/${arch}/"
+        ls /${repo_bucket}/${arch}/
         archives=$(ls /${repo_bucket}/${arch}/ | egrep "pkg.tar.xz$")
         echo "Sending notification message..."
         if [[ "$pkg" == "GIT_REPO" ]]; then
