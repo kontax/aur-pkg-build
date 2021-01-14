@@ -31,5 +31,5 @@ bash build.sh
 
 # Build the package and update the repo DB
 pacman -Sy
-sudo -u makepkg aur build -sf -d "${repo_name}" -- --noconfirm
+sudo -u makepkg aur build -Sf -d "${repo_name}" -- --noconfirm
 
