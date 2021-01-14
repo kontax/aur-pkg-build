@@ -32,7 +32,7 @@ chown -R makepkg /build
 
 echo "build-aur: Building package"
 sudo -u makepkg aur sync \
-    -snrf --no-view --no-ver-shallow \
+    -Srf --no-confirm --no-view --no-ver-argv \
     -d "${repo_name}" \
     -r "/${repo_bucket}/${arch}" \
     "${package}"
