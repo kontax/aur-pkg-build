@@ -7,7 +7,7 @@
 # located within S3.
 #
 # Example AUR database within an S3 bucket using the details above:
-#   s3://${repo_bucket}/${repo_arch}/${repo_name}.db.tar.xz
+#   s3://${repo_bucket}/${repo_arch}/${repo_name}.db.tar.zst
 #
 
 set -uo pipefail
@@ -112,7 +112,7 @@ while [ /bin/true ]; do
                     | paste -sd "-")
 
                 # Check if it's within the newly created repository
-                is_built=$(ls /${repo_bucket}/${arch}/*.pkg.tar.xz | grep ${file_check} | wc -l)
+                is_built=$(ls /${repo_bucket}/${arch}/*.pkg.tar.zst | grep ${file_check} | wc -l)
                 if [ $is_built -gt 0 ]; then
 
                     # If so, add it to the queue
@@ -135,7 +135,7 @@ while [ /bin/true ]; do
 
         echo "Files in /${repo_bucket}/${arch}/"
         ls /${repo_bucket}/${arch}/
-        archives=$(ls /${repo_bucket}/${arch}/ | egrep "pkg.tar.xz$")
+        archives=$(ls /${repo_bucket}/${arch}/ | egrep "pkg.tar.zst$")
         echo "Sending notification message..."
         if [[ "$pkg" == "GIT_REPO" ]]; then
             /send-pushover "${repo_bucket}" "Built: ${archives}"

@@ -45,17 +45,17 @@ for built_pkg in $pkgs; do
         --region ${region} \
         --acl public-read \
         --exclude "*" \
-        --include "${built_pkg}*.pkg.tar.xz*" \
+        --include "${built_pkg}*.pkg.tar.zst*" \
         s3://${repo_bucket}/${arch}/ /pkg/
 
     # Copy the package and signature to a temp folder
     pushd /pkg
-    newpkg=$(ls *.pkg.tar.xz)
+    newpkg=$(ls *.pkg.tar.zst)
     mv "${newpkg}"* /${repo_bucket}/${arch}/
 
     # Add it to the repo and sign
     pushd /${repo_bucket}/${arch}
-    sudo -u makepkg repo-add ${repo_name}.db.tar.xz "${newpkg}" -s
+    sudo -u makepkg repo-add ${repo_name}.db.tar.zst "${newpkg}" -s
     popd
     popd
 done

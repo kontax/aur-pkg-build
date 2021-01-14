@@ -35,12 +35,12 @@ aws s3 sync \
     --region ${region} \
     --acl public-read \
     --exclude "*" \
-    --include "*files.tar.xz" \
-    --include "*db.tar.xz" \
+    --include "*files.tar.zst" \
+    --include "*db.tar.zst" \
     s3://${repo_bucket} "/${repo_bucket}/"
 
-ln -sf "$repo_name.db.tar.xz" "/${repo_bucket}/${arch}/${repo_name}.db"
-ln -sf "$repo_name.files.tar.xz" "/${repo_bucket}/${arch}/${repo_name}.files"
+ln -sf "$repo_name.db.tar.zst" "/${repo_bucket}/${arch}/${repo_name}.db"
+ln -sf "$repo_name.files.tar.zst" "/${repo_bucket}/${arch}/${repo_name}.files"
 
 chown -R makepkg "/${repo_bucket}"
 
