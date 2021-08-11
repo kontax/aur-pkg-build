@@ -1,4 +1,4 @@
-FROM archlinux/base:latest
+FROM archlinux:base
 
 # Set up base files
 COPY cfg/sudoers            /etc/sudoers
@@ -37,3 +37,4 @@ ADD scripts/send-pushover       /send-pushover
 ADD scripts/pull-queue          /pull-queue
 ADD scripts/reset               /reset
 ENTRYPOINT ["/pull-queue"]
+#CMD ["/bin/bash"]
