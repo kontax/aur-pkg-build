@@ -24,7 +24,7 @@ RUN sed -E -i \
 
 # Pull aurutils from AUR
 RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/aurutils.git /mphome
-RUN sudo -u makepkg gpg --recv-keys 6BC26A17B9B7018A 
+#RUN sudo -u makepkg gpg --recv-keys 6BC26A17B9B7018A 
 RUN cd /mphome && sudo -u makepkg makepkg --noconfirm -sif
 
 # Scripts
