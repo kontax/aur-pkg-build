@@ -46,7 +46,6 @@ for built_pkg in $pkgs; do
         --acl public-read \
         --exclude "*" \
         --include "${built_pkg}*.pkg.tar.zst*" \
-        --include "${built_pkg}*.pkg.tar.xz*" \
         s3://${repo_bucket}/${arch}/ /pkg/
 
     # Copy the package and signature to a temp folder
