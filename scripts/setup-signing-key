@@ -12,6 +12,7 @@ set -Eeuo pipefail
 # Requried environment variables
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 aur_key=${AUR_KEY}          # Name of the SSM param containing the signing key
+aur_keys=${AUR_KEYS}        # Name of public signing keys within the parameter store
 
 
 # Import the required gpg keys
@@ -30,3 +31,11 @@ GPGKEY=$(gpg --show-keys --keyid-format LONG aur.key \
     | grep -o -P '(?<=/)[A-Z0-9]{16}')
 rm aur.key
 
+# Also import public keys used to verify some packages
+gpg --recv-keys $(
+    aws ssm get-parameter \
+        --region ${region} \
+        --name ${aur_keys} |
+        jq -r ".Parameter.Value" |
+        sed 's/,/ /g'
+)
