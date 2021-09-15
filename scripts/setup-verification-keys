@@ -11,7 +11,7 @@ set -Eeuo pipefail
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 aur_keys=${AUR_KEYS}        # Name of public signing keys within the parameter store
 
-gpg --recv-keys $(
+sudo -u makepkg gpg --recv-keys $(
     aws ssm get-parameter \
         --region ${region} \
         --name ${aur_keys} |
