@@ -1,0 +1,20 @@
+#!/bin/bash
+#
+# setup-verification-key
+#
+# Pulls down keys that are used to sign various AUR packages.
+#
+
+set -Eeuo pipefail
+
+# Requried environment variables
+region=${AWS_REGION}        # The AWS region the SQS queue is contained in
+aur_keys=${AUR_KEYS}        # Name of public signing keys within the parameter store
+
+gpg --recv-keys $(
+    aws ssm get-parameter \
+        --region ${region} \
+        --name ${aur_keys} |
+        jq -r ".Parameter.Value" |
+        sed 's/,/ /g'
+)

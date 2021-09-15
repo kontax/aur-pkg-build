@@ -30,12 +30,3 @@ GPGKEY=$(gpg --show-keys --keyid-format LONG aur.key \
     | grep sec \
     | grep -o -P '(?<=/)[A-Z0-9]{16}')
 rm aur.key
-
-# Also import public keys used to verify some packages
-gpg --recv-keys $(
-    aws ssm get-parameter \
-        --region ${region} \
-        --name ${aur_keys} |
-        jq -r ".Parameter.Value" |
-        sed 's/,/ /g'
-)

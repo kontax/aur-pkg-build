@@ -43,6 +43,7 @@ function delete_msg() {
 # Set up the GPG key used for sigining AUR packages
 # this is sourced so as to set the GPGKEY variable
 source /setup-signing-key
+/setup-verification-keys
 
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do

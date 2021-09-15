@@ -28,13 +28,14 @@ RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/aurutils.git /
 RUN cd /mphome && sudo -u makepkg makepkg --noconfirm -sif
 
 # Scripts
-ADD scripts/setup-repo          /setup-repo
-ADD scripts/setup-signing-key   /setup-signing-key
-ADD scripts/build-repo          /build-repo
-ADD scripts/build-aur           /build-aur
-ADD scripts/build-git           /build-git
-ADD scripts/send-pushover       /send-pushover
-ADD scripts/pull-queue          /pull-queue
-ADD scripts/reset               /reset
+ADD scripts/setup-repo              /setup-repo
+ADD scripts/setup-signing-key       /setup-signing-key
+ADD scripts/setup-verification-keys /setup-verification-keys
+ADD scripts/build-repo              /build-repo
+ADD scripts/build-aur               /build-aur
+ADD scripts/build-git               /build-git
+ADD scripts/send-pushover           /send-pushover
+ADD scripts/pull-queue              /pull-queue
+ADD scripts/reset                   /reset
 ENTRYPOINT ["/pull-queue"]
 #CMD ["/bin/bash"]
