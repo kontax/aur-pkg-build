@@ -28,6 +28,8 @@ chown -R makepkg:users /build
 
 # Run the build script
 cd $(ls | head)/pkg/
+git checkout ${git_branch}
+
 bash build.sh
 
 # Build the package and update the repo DB
