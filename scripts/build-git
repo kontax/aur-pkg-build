@@ -2,15 +2,16 @@
 
 set -Eeuo pipefail
 
-if [ "$#" -ne 2 ]; then
+if [ "$#" -ne 3 ]; then
   echo -e "Please provide git repository to build."
   echo -e "The repository must contain a build.sh script within it's pkg directory."
-  echo -e "Usage: build-git <git-repo> <repo-name>"
+  echo -e "Usage: build-git <git-repo> <repo-name> <git-branch>"
   exit 1
 fi
 
 git_repo=$1
 repo_name=$2
+git_branch=$3
 
 # Sort out the build directory
 if [ -d /build ]; then

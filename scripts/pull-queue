@@ -67,6 +67,7 @@ while [ /bin/true ]; do
         body=$(echo $result | jq '.Body | fromjson')
         pkg=$(echo $body | jq -r '.PackageName')
         git_url=$(echo $body | jq -r '.git_url')
+        git_branch=$(echo $body | jq -r '.git_branch')
         repo_bucket=$(echo $body | jq -r '.Repo')
 
         # Set up the repository from s3 - this only needs to be done once
@@ -82,7 +83,7 @@ while [ /bin/true ]; do
 
             # Update the metapackage and all built packages
             pkgs=$(echo $body | jq -r '.built_packages[]')
-            /build-repo "${repo_bucket}" "${git_url}" "${pkgs}"
+            /build-repo "${repo_bucket}" "${git_url}" "${git_branch}" "${pkgs}"
 
             echo "Clearing the fanout status table"
             send_msg "{ \

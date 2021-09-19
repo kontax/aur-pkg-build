@@ -15,15 +15,16 @@ region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}      # The name of the DB file within the repository
 arch=${REPO_ARCH}           # The architecture to build for (eg. x86_64)
 
-if [ "$#" -ne 3 ]; then
+if [ "$#" -ne 4 ]; then
   echo -e "Please provide bucket, git URL and packages"
-  echo -e "Usage: build-repo <repo-bucket> <git_url> <pkgs>"
+  echo -e "Usage: build-repo <repo-bucket> <git_url> <git_branch> <pkgs>"
   exit 1
 fi
 
 repo_bucket=$1
 git_url=$2
-pkgs=$3
+git_branch=$3
+pkgs=$4
 
 # Create the temp /pkg folder
 if [ -d /pkg ]; then
@@ -36,7 +37,7 @@ chown -R makepkg /pkg
 
 # Save the PKGBUILD and build that
 echo "Building PKGBUILD from git repo"
-/build-git "$git_url" "$repo_name"
+/build-git "$git_url" "$repo_name" "$git_branch"
 
 # Store each newly built package in the pkg folder
 for built_pkg in $pkgs; do
