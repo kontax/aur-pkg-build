@@ -145,6 +145,10 @@ while [ /bin/true ]; do
             /send-pushover "${pkg}" "Built: ${archives}"
         fi
 
+        echo "Cleaning up files"
+        rm -r /build
+        rm -r "/${repo_bucket}"
+        mv /etc/pacman.conf.bak /etc/pacman.conf
 
     fi
 done
