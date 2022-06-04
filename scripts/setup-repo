@@ -45,6 +45,7 @@ ln -sf "$repo_name.files.tar.zst" "/${repo_bucket}/${arch}/${repo_name}.files"
 chown -R makepkg "/${repo_bucket}"
 
 echo "setup-repo: Add repo to pacman.conf"
+cp /etc/pacman.conf /etc/pacman.conf.bak
 cat >> /etc/pacman.conf << EOF
 [${repo_name}]
 Server = file:///${repo_bucket}/${arch}
