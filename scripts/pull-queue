@@ -24,7 +24,7 @@ err_report() {
     else
         echo "$0: ${parent_lineno}; exiting with ${code}" >> err.log
     fi
-    /send_pushover "$(cat err.log)"
+    /send_pushover "${pkg} Build Error" "$(cat err.log)"
     /reset $pkg $receipt_handle
     exit ${code}
 }
