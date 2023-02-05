@@ -11,6 +11,20 @@
 set -Eeuo pipefail
 IFS=$'\n\t'
 
+err_report() {
+    local parent_lineno="$1"
+    local message="$2"
+    local code="${3:-1}"
+
+    if [[ -n "$message" ]]; then
+        echo "$0: ${parent_lineno}: $message" >> err.txt
+    else
+        echo "$0: ${parent_lineno}" >> err.txt
+    fi
+    exit $code
+}
+trap 'err_report ${LINENO} "$0: ${BASH_COMMAND}" $?' ERR
+
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}      # The name of the DB file within the repository
 arch=${REPO_ARCH}           # The architecture to build for (eg. x86_64)

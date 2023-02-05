@@ -11,7 +11,25 @@
 #
 
 set -uo pipefail
-trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; /reset $pkg $receipt_handle; exit $s' ERR
+#trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; /reset $pkg $receipt_handle; exit $s' ERR
+
+err_report() {
+    local parent_lineno="$1"
+    local message="$2"
+    local code="${3:-1}"
+
+    if [[ -n "$message" ]]; then
+        echo "$0: ${parent_lineno}: $message; exiting with ${code}" >> err.log
+    else
+        echo "$0: ${parent_lineno}; exiting with ${code}" >> err.log
+    fi
+    /send_pushover "$(cat err.log)"
+    /reset $pkg $receipt_handle
+    exit ${code}
+}
+
+trap 'err_report ${LINENO} "${BASH_COMMAND}" $?'
+
 IFS=$'\n\t'
 
 # Requried environment variables
@@ -47,6 +65,12 @@ source /setup-signing-key
 
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
+
+    # Re-create the error log
+    if [[ -f "err.log" ]]; then
+        rm err.log
+        touch err.log
+    fi
 
     # Fetch the next message and extract the package to build
     echo "Fetching messages fom SQS queue: ${queue}..."
@@ -100,7 +124,7 @@ while [ /bin/true ]; do
             # Any dependencies that were build also need to be added
             # Note: Grep doesn't work for whatever reason
             echo "pull-queue: Getting dependencies for ${pkg}"
-            depends=$(aur depends "${pkg}" | sed "s/${pkg}//g")
+            depends=$(aur depends "${pkg}" | sed "/^${pkg}$/d")
             echo "pull-queue: ${pkg} has the following dependencies:"
             echo ${depends}
             for dep in $depends; do
@@ -109,7 +133,7 @@ while [ /bin/true ]; do
                 # name, version and arch according to pacman.
                 # This could be a little brittle...
                 file_check=$(pacman -Si "${pkg}" \
-                    | egrep "Name|Version|Architecture" \
+                    | grep -E "Name|Version|Architecture" \
                     | awk '{print $3}' \
                     | paste -sd "-")
 
@@ -137,7 +161,7 @@ while [ /bin/true ]; do
 
         echo "Files in /${repo_bucket}/${arch}/"
         ls /${repo_bucket}/${arch}/
-        archives=$(ls /${repo_bucket}/${arch}/ | egrep "pkg.tar.zst$")
+        archives=$(ls /${repo_bucket}/${arch}/ | grep -E "pkg.tar.zst$")
         echo "Sending notification message..."
         if [[ "$pkg" == "GIT_REPO" ]]; then
             /send-pushover "${repo_bucket}" "Built: ${archives}"

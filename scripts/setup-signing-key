@@ -9,6 +9,20 @@
 
 set -Eeuo pipefail
 
+err_report() {
+    local parent_lineno="$1"
+    local message="$2"
+    local code="${3:-1}"
+
+    if [[ -n "$message" ]]; then
+        echo "$0: ${parent_lineno}: $message" >> err.txt
+    else
+        echo "$0: ${parent_lineno}" >> err.txt
+    fi
+    exit $code
+}
+trap 'err_report ${LINENO} "$0: ${BASH_COMMAND}" $?' ERR
+
 # Requried environment variables
 region=${AWS_REGION}        # The AWS region the SQS queue is contained in
 aur_key=${AUR_KEY}          # Name of the SSM param containing the signing key
