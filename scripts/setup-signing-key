@@ -14,6 +14,7 @@ err_report() {
     local message="$2"
     local code="${3:-1}"
 
+    echo "err_report for $0"
     if [[ -n "$message" ]]; then
         echo "$0: ${parent_lineno}: $message" >> err.txt
     else
