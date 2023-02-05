@@ -18,9 +18,9 @@ err_report() {
 
     echo "err_report for $0"
     if [[ -n "$message" ]]; then
-        echo "$0: ${parent_lineno}: $message" >> err.txt
+        echo "$0: ${parent_lineno}: $message" >> err.log
     else
-        echo "$0: ${parent_lineno}" >> err.txt
+        echo "$0: ${parent_lineno}" >> err.log
     fi
     exit $code
 }

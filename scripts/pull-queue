@@ -10,8 +10,8 @@
 #   s3://${repo_bucket}/${repo_arch}/${repo_name}.db.tar.zst
 #
 
+exec 2> >(tee "err.log" >&2)
 set -uo pipefail
-#trap 's=$?; /send-pushover "$pkg Build Error" "$0: Error on line "$LINENO": $BASH_COMMAND"; /reset $pkg $receipt_handle; exit $s' ERR
 
 err_report() {
     local parent_lineno="$1"
@@ -24,7 +24,7 @@ err_report() {
     else
         echo "$0: ${parent_lineno}; exiting with ${code}" >> err.log
     fi
-    /send_pushover "${pkg} Build Error" "$(cat err.log)"
+    /send-pushover "${pkg} Build Error" "$(cat err.log)"
     /reset $pkg $receipt_handle
     exit ${code}
 }
