@@ -16,11 +16,11 @@ err_report() {
     local message="$2"
     local code="${3:-1}"
 
-    echo "err_report for $0"
+    echo "err_report for build-repo"
     if [[ -n "$message" ]]; then
-        echo "$0: ${parent_lineno}: $message" >> err.log
+        echo "$0: ${parent_lineno}: $message" >> /err.log
     else
-        echo "$0: ${parent_lineno}" >> err.log
+        echo "$0: ${parent_lineno}" >> /err.log
     fi
     exit $code
 }
@@ -64,19 +64,19 @@ for built_pkg in $pkgs; do
         --include "${built_pkg}*.pkg.tar.zst*" \
         s3://${repo_bucket}/${arch}/ /pkg/
 
-    # Copy the package and signature to a temp folder
+    echo "Copy the package and signature to a temp folder"
     pushd /pkg
     newpkg=$(ls *.pkg.tar.zst)
     mv "${newpkg}"* /${repo_bucket}/${arch}/
 
-    # Add it to the repo and sign
+    echo "Add it to the repo and sign"
     pushd /${repo_bucket}/${arch}
     sudo -u makepkg repo-add ${repo_name}.db.tar.zst "${newpkg}" -s
     popd
     popd
 done
 
-# Sync up DB and package to s3
+echo "Sync up DB and package to s3"
 aws s3 sync \
     --region ${region} \
     --acl public-read \

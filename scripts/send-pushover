@@ -15,8 +15,11 @@ if [ "$#" -lt 2 ]; then
   exit 1
 fi
 
+
 title=$1
 message=$2
+
+echo "Sending pushover message $message"
 
 curl -s \
     --form-string "token=${pushover_token}" \

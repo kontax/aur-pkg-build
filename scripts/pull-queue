@@ -10,21 +10,24 @@
 #   s3://${repo_bucket}/${repo_arch}/${repo_name}.db.tar.zst
 #
 
-exec 2> >(tee "err.log" >&2)
-set -uo pipefail
+exec 2> >(tee "/cmd_errors.log" >&2)
+set -Euo pipefail
 
 err_report() {
     local parent_lineno="$1"
     local message="$2"
     local code="${3:-1}"
 
-    echo "err_report for $0"
+    echo "err_report for pull-queue"
     if [[ -n "$message" ]]; then
-        echo "$0: ${parent_lineno}: $message; exiting with ${code}" >> err.log
+        echo "$0: ${parent_lineno}: $message; exiting with ${code}" >> /err.log
     else
-        echo "$0: ${parent_lineno}; exiting with ${code}" >> err.log
+        echo "$0: ${parent_lineno}; exiting with ${code}" >> /err.log
     fi
-    /send-pushover "${pkg} Build Error" "$(cat err.log)"
+    # Prepend the latest error message to the log
+    printf '%s\n%s\n' "$(tail -1 /cmd_errors.log)" "$(cat /err.log)" > /err.log
+
+    /send-pushover "${pkg} Build Error" "$(cat /err.log)"
     /reset $pkg $receipt_handle
     exit ${code}
 }
@@ -39,6 +42,9 @@ region=${AWS_REGION}            # The AWS region the SQS queue is contained in
 repo_name=${REPO_NAME}          # The name of the DB file within the repository
 arch=${REPO_ARCH}               # The architecture to build for (eg. x86_64)
 fanout_queue=${FANOUT_QUEUE}    # URL of the queue to send a completion or failure notification to
+aur_key=${AUR_KEY}          # Name of the SSM param containing the signing key
+aur_keys=${AUR_KEYS}        # Name of public signing keys within the parameter store
+
 
 
 # Sends a message to the AWS SQS queue
@@ -59,19 +65,28 @@ function delete_msg() {
         --receipt-handle "${handle}"
 }
 
-# Set up the GPG key used for sigining AUR packages
-# this is sourced so as to set the GPGKEY variable
-source /setup-signing-key
+# Import the required gpg keys
+echo "Importing GPG keys for signing built packages"
+aws ssm get-parameter \
+    --region "${region}" \
+    --name "${aur_key}" \
+    --with-decryption \
+    | jq -r ".Parameter.Value" > aur.key
+
+# Add them to the various key storages
+sudo -u makepkg gpg --import aur.key
+gpg --homedir /etc/pacman.d/gnupg --import aur.key
+GPGKEY=$(gpg --show-keys --keyid-format LONG aur.key \
+    | grep sec \
+    | grep -o -P '(?<=/)[A-Z0-9]{16}')
+rm aur.key
 /setup-verification-keys
 
 # Fetch messages and render them until the queue is drained.
 while [ /bin/true ]; do
 
     # Re-create the error log
-    if [[ -f "err.log" ]]; then
-        rm err.log
-        touch err.log
-    fi
+    touch /err.log
 
     # Fetch the next message and extract the package to build
     echo "Fetching messages fom SQS queue: ${queue}..."
@@ -106,7 +121,7 @@ while [ /bin/true ]; do
 
         if [[ "$pkg" == "GIT_REPO" ]]; then
 
-            # Update the metapackage and all built packages
+            echo "Update the metapackage and all built packages"
             pkgs=$(echo $body | jq -r '.built_packages[]')
             /build-repo "${repo_bucket}" "${git_url}" "${git_branch}" "${pkgs}"
 
@@ -118,7 +133,7 @@ while [ /bin/true ]; do
             }"
 
         else
-            # Use the AUR building script
+            echo "Use the AUR building script"
             echo "Building a ${pkg} from the AUR"
             /build-aur "$repo_bucket" "$pkg"
 
