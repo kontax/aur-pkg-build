@@ -28,7 +28,7 @@ err_report() {
     exit ${code}
 }
 
-trap 'err_report ${LINENO} "${BASH_COMMAND}" $?'
+trap 'err_report ${LINENO} "${BASH_COMMAND}" $?' ERR
 
 IFS=$'\n\t'
 
