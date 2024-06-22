@@ -41,8 +41,10 @@ cd /build
 git clone $git_repo
 chown -R makepkg:users /build
 
-# Run the build script
+# Pull any submodules and run the build script
 cd $(ls | head)/pkg/
+git submodule init
+git submodule update
 sudo -u makepkg git checkout ${git_branch}
 sudo -u makepkg bash build.sh
 
