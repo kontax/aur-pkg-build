@@ -38,13 +38,11 @@ chown -R makepkg /build
 cd /build
 
 # Clone the package
-git clone $git_repo
+git clone $git_repo -b ${git_branch} --recurse-submodules
 chown -R makepkg:users /build
 
 # Pull any submodules and run the build script
 cd $(ls | head)/pkg/
-sudo -u makepkg git checkout ${git_branch}
-sudo -u makepkg git pull --recurse-submodules
 sudo -u makepkg bash build.sh
 
 # Build the package and update the repo DB
