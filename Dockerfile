@@ -26,13 +26,13 @@ RUN sed -E -i \
      s/(#)?MAKEFLAGS.*/MAKEFLAGS="-j$(nproc)"/g' /etc/makepkg.conf
 
 # 1. Pull and compile pacutils-git from AUR (Bypasses broken upstream package)
-RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/pacutils-git.git /build/pacutils-git && \
-    cd /build/pacutils-git && \
+RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/pacutils-git.git /mphome/pacutils-git && \
+    cd /mphome/pacutils-git && \
     sudo -u makepkg makepkg --noconfirm -sif --nocheck
 
 # 2. Pull aurutils from AUR (Will use our fixed pacutils)
-RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/aurutils.git /build/aurutils && \
-    cd /build/aurutils && \
+RUN sudo -u makepkg git clone --depth 1 https://aur.archlinux.org/aurutils.git /mphome/aurutils && \
+    cd /mphome/aurutils && \
     sudo -u makepkg makepkg --noconfirm -sif --nocheck
 
 # Scripts
