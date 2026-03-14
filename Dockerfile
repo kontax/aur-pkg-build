@@ -2,10 +2,12 @@ FROM archlinux:base
 
 # Set up base files
 COPY cfg/sudoers            /etc/sudoers
-COPY cfg/mirrorlist         /etc/pacman.d/mirrorlist
 
 # Install base packages
-RUN pacman -Syu --noconfirm --needed \
+RUN pacman -Sy --noconfirm archlinux-keyring && \
+    pacman -S --noconfirm reflector && \
+    reflector --latest 5 --protocol https --sort rate --save /etc/pacman.d/mirrorlist && \
+    pacman -Syu --noconfirm --needed \
     base-devel \
     git \
     devtools \
